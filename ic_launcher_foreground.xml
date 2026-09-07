@@ -1,0 +1,57 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Ping arcs (left) -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FF2D55"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:pathData="M34,44 C30,49 30,59 34,64" />
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#80FF2D55"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:pathData="M27,39 C21,47 21,61 27,69" />
+
+    <!-- Ping arcs (right) -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FF2D55"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:pathData="M74,44 C78,49 78,59 74,64" />
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#80FF2D55"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:pathData="M81,39 C87,47 87,61 81,69" />
+
+    <!-- Center Heart with vibrant gradient -->
+    <path
+        android:pathData="M54,69.5 C53,68.5 41.5,58.2 38.2,52 C35,46 36.8,38.8 42.5,36.5 C46.5,34.9 51.2,37 54,41 C56.8,37 61.5,34.9 65.5,36.5 C71.2,38.8 73,46 69.8,52 C66.5,58.2 55,68.5 54,69.5 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="38"
+                android:startY="36"
+                android:endX="70"
+                android:endY="70"
+                android:type="linear">
+                <item android:offset="0.0" android:color="#FF375F" />
+                <item android:offset="0.5" android:color="#FF2D55" />
+                <item android:offset="1.0" android:color="#E00034" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Small glossy specular highlight on the heart -->
+    <path
+        android:fillColor="#4DFFFFFF"
+        android:pathData="M43,39 C41,40 39.5,43 39.5,46 C38.5,45 38.8,42 41,40 C41.6,39.5 42.4,39.2 43,39 Z" />
+</vector>
+

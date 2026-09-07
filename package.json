@@ -1,0 +1,14 @@
+{
+  "name": "heartping",
+  "version": "1.0.0",
+  "description": "A romantic one-tap heart ping PWA for long-distance relationships",
+  "type": "module",
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js",
+    "build": "echo 'Build complete'"
+  },
+  "keywords": ["pwa", "heartping", "couples", "love"],
+  "author": "",
+  "license": "MIT"
+}
