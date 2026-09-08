@@ -6,9 +6,19 @@
   "scripts": {
     "dev": "node server.js",
     "start": "node server.js",
-    "build": "echo 'Build complete'"
+    "build": "node scripts/build.mjs",
+    "test": "node --test tests/backend.test.mjs tests/deployment.test.mjs",
+    "test:browser": "node tests/browser.mjs"
   },
-  "keywords": ["pwa", "heartping", "couples", "love"],
+  "keywords": [
+    "pwa",
+    "heartping",
+    "couples",
+    "love"
+  ],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "engines": {
+    "node": ">=24 <25"
+  }
 }

@@ -5,7 +5,7 @@
   <title>HeartPing - Long Distance Love</title>
   
   <!-- Mobile & iOS PWA Configuration -->
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="HeartPing">
@@ -29,6 +29,7 @@
 </head>
 <body>
   <div id="app-container" class="ios-app">
+    <p id="connection-status" class="connection-status" role="status" aria-live="polite">Keep HeartPing open to receive pings.</p>
     
     <!-- Top Floating Toast / Dynamic Island Notification -->
     <div id="toast-banner" class="toast-banner" role="alert" aria-live="assertive">
@@ -65,6 +66,7 @@
         </button>
       </div>
 
+      <button data-demo class="ios-btn ios-btn-secondary full-width">Try local demo</button>
       <div class="welcome-footer">
         <div class="pwa-hint">
           <span class="ios-icon">📲</span>
@@ -95,7 +97,7 @@
               <span id="copy-status">Copy</span>
             </button>
           </div>
-          <p class="card-hint">Share this 6-digit code with your partner.</p>
+          <p class="card-hint">Share this code privately. It expires after 24 hours; continue from your name again to renew it.</p>
         </div>
 
         <div class="or-divider">
@@ -107,12 +109,10 @@
           <span class="card-subtitle">Enter Partner's 6-Digit Code</span>
           
           <div class="ios-input-group mt-sm">
-            <input type="text" inputmode="numeric" pattern="[0-9]*" id="input-partner-code" class="ios-input code-input" placeholder="000000" maxlength="6">
+            <input type="text" inputmode="numeric" pattern="[0-9]*" aria-label="Partner pairing code" id="input-partner-code" class="ios-input code-input" placeholder="000000" maxlength="6">
           </div>
           
-          <div class="ios-input-group mt-sm">
-            <input type="text" id="input-partner-name" class="ios-input" placeholder="Partner's Name (e.g. Maya)" maxlength="24">
-          </div>
+<p class="input-helper">Your name above is shared automatically. Your partner’s name comes from their session.</p>
 
           <button id="btn-connect-partner" class="ios-btn ios-btn-primary full-width mt-md" disabled>
             Pair With Partner
@@ -124,7 +124,7 @@
           <div class="demo-header">
             <span>Want to test it right now?</span>
           </div>
-          <button id="btn-quick-demo" class="ios-btn ios-btn-secondary full-width">
+          <button id="btn-quick-demo" data-demo class="ios-btn ios-btn-secondary full-width">
             Test Pair with Demo Partner (Maya)
           </button>
         </div>
@@ -189,7 +189,7 @@
           <div class="notification-info">
             <span class="notif-icon">🔔</span>
             <div class="notif-text">
-              <span class="notif-title">Instant Alerts</span>
+              <span class="notif-title">In-app Alerts</span>
               <span class="notif-status" id="notif-status-label">Notifications: Not enabled</span>
             </div>
           </div>
@@ -263,7 +263,7 @@
       <div class="ios-sheet">
         <div class="sheet-handle"></div>
         <div class="sheet-header">
-          <h2 class="sheet-title">App & Firebase Status</h2>
+          <h2 class="sheet-title">App Status</h2>
           <button id="btn-close-info" class="sheet-close" aria-label="Close">&times;</button>
         </div>
         <div class="sheet-body">
@@ -273,11 +273,9 @@
               <span class="notice-badge">Architecture Status</span>
             </div>
             <p class="notice-text">
-              <strong>Local Interactive Mode Active:</strong> You can test pairing, sending pings, vibration, and local notifications right now.
-            </p>
+              <strong>Stay connected:</strong> Both partners must open this app from the same HeartPing website. Pings appear while the app is open and connected.</p>
             <p class="notice-text mt-xs">
-              <strong>Firebase Cloud Sync:</strong> Ready to connect! Update <code>FIREBASE_CONFIG</code> in <code>firebase-service.js</code> to enable cross-device cloud push notifications via Firebase Cloud Messaging (FCM) and Firestore.
-            </p>
+              <strong>Offline & alerts:</strong> You can open the cached app offline, but pairing and sending require a connection. Closed-app push notifications are not available. Demo mode is local only.</p>
           </div>
 
           <div class="ios-list-group mt-md">
@@ -287,7 +285,7 @@
             </div>
             <div class="list-item">
               <span class="item-label">Service Worker</span>
-              <span class="item-value" id="info-sw-status">Active</span>
+              <span class="item-value" id="info-sw-status">Checking</span>
             </div>
             <div class="list-item">
               <span class="item-label">Notification API</span>
@@ -318,3 +316,4 @@
   <script type="module" src="app.js"></script>
 </body>
 </html>
+

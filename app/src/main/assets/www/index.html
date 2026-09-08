@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>HeartPing - Long Distance Love</title>
+  
+  <!-- Mobile & iOS PWA Configuration -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="HeartPing">
+  <meta name="theme-color" content="#FFF5F7">
+  
+  <!-- iOS App Icon & Manifest -->
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" sizes="512x512" href="icons/icon-512.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Playfair+Display:ital,wght@0,600;1,500&display=swap" rel="stylesheet">
+  
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app-container" class="ios-app">
+    <p id="connection-status" class="connection-status" role="status" aria-live="polite">Keep HeartPing open to receive pings.</p>
+    
+    <!-- Top Floating Toast / Dynamic Island Notification -->
+    <div id="toast-banner" class="toast-banner" role="alert" aria-live="assertive">
+      <div class="toast-icon">❤️</div>
+      <div class="toast-content">
+        <span class="toast-title" id="toast-title">Ping sent ❤️</span>
+        <span class="toast-desc" id="toast-desc">Your partner felt your heartbeat.</span>
+      </div>
+    </div>
+
+    <!-- Floating Hearts Container for particle animation -->
+    <div id="hearts-container" class="hearts-container" aria-hidden="true"></div>
+
+    <!-- 1. ONBOARDING / SETUP SCREEN -->
+    <section id="screen-welcome" class="screen active">
+      <div class="welcome-header">
+        <div class="app-logo-badge">
+          <div class="logo-heart-pulse"></div>
+          <span class="logo-symbol">❤️</span>
+        </div>
+        <h1 class="app-title">HeartPing</h1>
+        <p class="app-tagline">One tap to stay connected across any distance.</p>
+      </div>
+
+      <div class="ios-card onboarding-card">
+        <label for="input-my-name" class="ios-label">What is your first name?</label>
+        <div class="ios-input-group">
+          <input type="text" id="input-my-name" class="ios-input" placeholder="e.g., Alex" maxlength="24" autocomplete="given-name">
+        </div>
+        <p class="input-helper">This is the name your partner will see on their screen.</p>
+        
+        <button id="btn-start-pairing" class="ios-btn ios-btn-primary full-width" disabled>
+          Continue to Pairing
+        </button>
+      </div>
+
+      <button data-demo class="ios-btn ios-btn-secondary full-width">Try local demo</button>
+      <div class="welcome-footer">
+        <div class="pwa-hint">
+          <span class="ios-icon">📲</span>
+          <span>Designed for iPhone &bull; Tap Share &rarr; <strong>Add to Home Screen</strong></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. PAIRING SCREEN -->
+    <section id="screen-pairing" class="screen">
+      <div class="nav-bar">
+        <button id="btn-back-to-name" class="ios-nav-btn" aria-label="Back">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+          <span id="nav-user-greeting">Hi Alex</span>
+        </button>
+        <span class="nav-title">Connect</span>
+        <div style="width: 44px;"></div>
+      </div>
+
+      <div class="pairing-content">
+        <!-- My Pairing Code Card -->
+        <div class="ios-card code-display-card">
+          <span class="card-subtitle">Your Unique Pairing Code</span>
+          <div class="code-box" id="code-box">
+            <span class="digit-code" id="my-pairing-code">------</span>
+            <button id="btn-copy-code" class="copy-pill-btn" aria-label="Copy code">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+              <span id="copy-status">Copy</span>
+            </button>
+          </div>
+          <p class="card-hint">Share this code privately. It expires after 24 hours; continue from your name again to renew it.</p>
+        </div>
+
+        <div class="or-divider">
+          <span>OR</span>
+        </div>
+
+        <!-- Enter Partner Code Card -->
+        <div class="ios-card enter-code-card">
+          <span class="card-subtitle">Enter Partner's 6-Digit Code</span>
+          
+          <div class="ios-input-group mt-sm">
+            <input type="text" inputmode="numeric" pattern="[0-9]*" aria-label="Partner pairing code" id="input-partner-code" class="ios-input code-input" placeholder="000000" maxlength="6">
+          </div>
+          
+<p class="input-helper">Your name above is shared automatically. Your partner’s name comes from their session.</p>
+
+          <button id="btn-connect-partner" class="ios-btn ios-btn-primary full-width mt-md" disabled>
+            Pair With Partner
+          </button>
+        </div>
+
+        <!-- Quick Demo Mode for Testing -->
+        <div class="demo-card">
+          <div class="demo-header">
+            <span>Want to test it right now?</span>
+          </div>
+          <button id="btn-quick-demo" data-demo class="ios-btn ios-btn-secondary full-width">
+            Test Pair with Demo Partner (Maya)
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. MAIN PAIRED SCREEN -->
+    <section id="screen-main" class="screen">
+      <!-- Top iOS Header Bar -->
+      <header class="main-header">
+        <div class="partner-pill">
+          <span class="status-indicator"></span>
+          <span class="partner-name-display" id="partner-name-display">Paired with Maya</span>
+          <span class="heart-badge">❤️</span>
+        </div>
+
+        <div class="header-actions">
+          <button id="btn-info-modal" class="icon-round-btn" aria-label="Backend and PWA info">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+          </button>
+          <button id="btn-settings" class="icon-round-btn" aria-label="Pairing Settings">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          </button>
+        </div>
+      </header>
+
+      <!-- Centerpiece: Large Animated Heart Button -->
+      <main class="heart-stage">
+        <div class="heart-glow-ring ring-3"></div>
+        <div class="heart-glow-ring ring-2"></div>
+        <div class="heart-glow-ring ring-1"></div>
+
+        <button id="btn-heart-ping" class="main-heart-button" aria-label="Send Heart Ping">
+          <div class="heart-shape">
+            <svg viewBox="0 0 100 90" class="heart-svg">
+              <defs>
+                <linearGradient id="heartGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#FF4D6D" />
+                  <stop offset="45%" stop-color="#FF2D55" />
+                  <stop offset="100%" stop-color="#C9184A" />
+                </linearGradient>
+                <filter id="heartShadow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#FF2D55" flood-opacity="0.45" />
+                </filter>
+              </defs>
+              <path d="M 50,85 C 48,83 8,52 8,28 C 8,12 21,2 35,2 C 43,2 48,6 50,11 C 52,6 57,2 65,2 C 79,2 92,12 92,28 C 92,52 52,83 50,85 Z" fill="url(#heartGradient)" filter="url(#heartShadow)" />
+            </svg>
+            <div class="heart-reflection"></div>
+            <span class="heart-tap-label">TAP TO PING</span>
+          </div>
+        </button>
+
+        <div class="ping-status-text" id="ping-status-text">
+          Tap the heart to send your heartbeat
+        </div>
+      </main>
+
+      <!-- Interactive Controls & History Bottom Sheet -->
+      <div class="ios-bottom-section">
+        <!-- Notification Banner / Button -->
+        <div class="notification-bar ios-card" id="notification-card">
+          <div class="notification-info">
+            <span class="notif-icon">🔔</span>
+            <div class="notif-text">
+              <span class="notif-title">In-app Alerts</span>
+              <span class="notif-status" id="notif-status-label">Notifications: Not enabled</span>
+            </div>
+          </div>
+          <button id="btn-enable-notif" class="ios-btn ios-btn-small">
+            Enable
+          </button>
+        </div>
+
+        <!-- Simulation Tool for Quick Testing of Incoming Signal -->
+        <div class="simulate-ping-bar">
+          <button id="btn-simulate-partner-ping" class="simulate-btn">
+            <span>✨ Test Partner Ping</span>
+          </button>
+        </div>
+
+        <!-- History Card -->
+        <div class="ios-card history-card">
+          <div class="history-header">
+            <span class="history-title">Recent Heartbeats</span>
+            <span class="history-count" id="history-count">0 pings</span>
+          </div>
+          
+          <div id="history-list" class="history-list">
+            <div class="history-empty" id="history-empty">
+              <span>No pings yet. Tap the heart to send your first ping!</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. SETTINGS & UNPAIR MODAL SHEET -->
+    <div id="modal-settings" class="ios-modal-backdrop" aria-hidden="true">
+      <div class="ios-sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+          <h2 class="sheet-title">Relationship Settings</h2>
+          <button id="btn-close-settings" class="sheet-close" aria-label="Close">&times;</button>
+        </div>
+        <div class="sheet-body">
+          <div class="ios-list-group">
+            <div class="list-item">
+              <span class="item-label">Your Name</span>
+              <span class="item-value" id="settings-my-name">-</span>
+            </div>
+            <div class="list-item">
+              <span class="item-label">Your Pairing Code</span>
+              <span class="item-value" id="settings-my-code">-</span>
+            </div>
+            <div class="list-item">
+              <span class="item-label">Paired Partner</span>
+              <span class="item-value" id="settings-partner-name">-</span>
+            </div>
+            <div class="list-item">
+              <span class="item-label">Partner Code</span>
+              <span class="item-value" id="settings-partner-code">-</span>
+            </div>
+          </div>
+
+          <div class="mt-lg">
+            <button id="btn-unpair" class="ios-btn ios-btn-destructive full-width">
+              Unpair & Change Partner
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. BACKEND & PWA INFO MODAL SHEET -->
+    <div id="modal-info" class="ios-modal-backdrop" aria-hidden="true">
+      <div class="ios-sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+          <h2 class="sheet-title">App Status</h2>
+          <button id="btn-close-info" class="sheet-close" aria-label="Close">&times;</button>
+        </div>
+        <div class="sheet-body">
+          <!-- Backend Separation Clarity Notice -->
+          <div class="notice-card">
+            <div class="notice-header">
+              <span class="notice-badge">Architecture Status</span>
+            </div>
+            <p class="notice-text">
+              <strong>Stay connected:</strong> Both partners must open this app from the same HeartPing website. Pings appear while the app is open and connected.</p>
+            <p class="notice-text mt-xs">
+              <strong>Offline & alerts:</strong> You can open the cached app offline, but pairing and sending require a connection. Closed-app push notifications are not available. Demo mode is local only.</p>
+          </div>
+
+          <div class="ios-list-group mt-md">
+            <div class="list-item">
+              <span class="item-label">Display Mode</span>
+              <span class="item-value" id="info-display-mode">Web / Browser</span>
+            </div>
+            <div class="list-item">
+              <span class="item-label">Service Worker</span>
+              <span class="item-value" id="info-sw-status">Checking</span>
+            </div>
+            <div class="list-item">
+              <span class="item-label">Notification API</span>
+              <span class="item-value" id="info-notif-status">Available</span>
+            </div>
+          </div>
+
+          <div class="pwa-instructions mt-md">
+            <h3 class="instructions-heading">How to Install on iPhone (Safari):</h3>
+            <ol class="instructions-steps">
+              <li>Open this web app in <strong>Safari</strong> on iOS.</li>
+              <li>Tap the <strong>Share</strong> button (box with upward arrow) at the bottom.</li>
+              <li>Scroll down and select <strong>"Add to Home Screen"</strong>.</li>
+              <li>Launch HeartPing from your Home Screen for full native fullscreen experience.</li>
+            </ol>
+          </div>
+
+          <button id="btn-clear-history" class="ios-btn ios-btn-secondary full-width mt-md">
+            Clear Ping History
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Scripts -->
+  <script type="module" src="app.js"></script>
+</body>
+</html>
+

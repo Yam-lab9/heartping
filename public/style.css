@@ -1070,3 +1070,16 @@ html, body {
 .mt-sm { margin-top: 8px; }
 .mt-md { margin-top: 14px; }
 .mt-lg { margin-top: 20px; }
+
+[hidden] { display: none !important; }
+.connection-status { padding: 10px 20px 0; font-size: 12px; color: #81334b; text-align: center; overflow-wrap: anywhere; }
+.partner-pill { min-width: 0; padding: 8px 10px; }
+.partner-name-display, .history-desc, .item-value { overflow-wrap: anywhere; min-width: 0; }
+.header-actions { flex-shrink: 0; }
+.main-header { gap: 8px; }
+.ios-sheet { max-height: 90dvh; overflow-y: auto; }
+.digit-code { user-select: text; -webkit-user-select: text; }
+button:focus-visible { outline: 3px solid #81334b; outline-offset: 3px; }
+button:disabled { cursor: not-allowed; opacity: .5; }
+@media (max-width: 360px) { .code-box { padding: 12px 8px; } .digit-code { font-size: 24px; letter-spacing: 2px; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }

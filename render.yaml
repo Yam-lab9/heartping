@@ -1,0 +1,22 @@
+# Paid web service: the persistent disk is required for pairing/ping state.
+services:
+  - type: web
+    name: heartping
+    runtime: node
+    plan: starter
+    region: frankfurt
+    numInstances: 1
+    buildCommand: node scripts/build.mjs && node --test tests/backend.test.mjs tests/deployment.test.mjs
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: HOST
+        value: 0.0.0.0
+      - key: DATA_FILE
+        value: /var/data/heartping.json
+    disk:
+      name: heartping-data
+      mountPath: /var/data
+      sizeGB: 1

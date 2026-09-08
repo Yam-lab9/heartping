@@ -12,6 +12,16 @@ import android.webkit.WebChromeClient
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
+import android.net.Uri
+import androidx.webkit.WebViewAssetLoader
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.remember
+import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -78,32 +88,52 @@ class AndroidBridge(private val context: Context) {
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
 fun HeartPingScreen(modifier: Modifier = Modifier) {
-  AndroidView(
-    modifier = modifier.fillMaxSize(),
-    factory = { ctx ->
-      WebView(ctx).apply {
-        settings.javaScriptEnabled = true
-        settings.domStorageEnabled = true
-        settings.databaseEnabled = true
-        settings.allowFileAccess = true
-        @Suppress("DEPRECATION")
-        settings.allowFileAccessFromFileURLs = true
-        @Suppress("DEPRECATION")
-        settings.allowUniversalAccessFromFileURLs = true
-        settings.cacheMode = WebSettings.LOAD_DEFAULT
-        settings.useWideViewPort = true
-        settings.loadWithOverviewMode = true
-        settings.mediaPlaybackRequiresUserGesture = false
-
-        webViewClient = WebViewClient()
-        webChromeClient = WebChromeClient()
-
-        addJavascriptInterface(AndroidBridge(ctx), "AndroidBridge")
-
-        loadUrl("file:///android_asset/www/index.html")
+  val context = androidx.compose.ui.platform.LocalContext.current
+  val lifecycleOwner = LocalLifecycleOwner.current
+  val webView = remember {
+    val assetLoader = WebViewAssetLoader.Builder()
+      .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(context))
+      .build()
+    val startUrl = BuildConfig.HEARTPING_URL.ifBlank {
+      "https://appassets.androidplatform.net/assets/www/index.html"
+    }
+    val allowed = Uri.parse(startUrl)
+    WebView(context).apply {
+      settings.javaScriptEnabled = true
+      settings.domStorageEnabled = true
+      settings.allowFileAccess = false
+      settings.allowContentAccess = false
+      settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
+      settings.mediaPlaybackRequiresUserGesture = true
+      webViewClient = object : WebViewClient() {
+        override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? =
+          assetLoader.shouldInterceptRequest(request.url)
+        override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean =
+          request.url.scheme != "https" || request.url.host != allowed.host || request.url.port != allowed.port
+      }
+      webChromeClient = WebChromeClient()
+      // Expose the bounded vibration bridge only to bundled content.
+      if (BuildConfig.HEARTPING_URL.isBlank()) addJavascriptInterface(AndroidBridge(context), "AndroidBridge")
+      loadUrl(startUrl)
+    }
+  }
+  DisposableEffect(lifecycleOwner, webView) {
+    val observer = LifecycleEventObserver { _, event ->
+      when (event) {
+        Lifecycle.Event.ON_PAUSE -> webView.onPause()
+        Lifecycle.Event.ON_RESUME -> webView.onResume()
+        else -> Unit
       }
     }
-  )
+    lifecycleOwner.lifecycle.addObserver(observer)
+    onDispose {
+      lifecycleOwner.lifecycle.removeObserver(observer)
+      webView.stopLoading()
+      webView.removeJavascriptInterface("AndroidBridge")
+      webView.destroy()
+    }
+  }
+  AndroidView(modifier = modifier.fillMaxSize().safeDrawingPadding(), factory = { webView })
 }
 
 @Composable
