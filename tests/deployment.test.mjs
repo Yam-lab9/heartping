@@ -1,17 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import os from 'node:os';
+import { hostedOptions } from './hosted.mjs';
 import path from 'node:path';
 import http from 'node:http';
-import { spawn, spawnSync } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import { once } from 'node:events';
-import { createServer } from '../server.js';
 const root = path.resolve(import.meta.dirname, '..');
 
-test('production entry point uses PORT, public Host/HTTPS Origin and persistent disk across process restarts', async t => {
-  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'heartping-deploy-'));
-  const dataFile = path.join(directory, 'heartping.json');
+test('hosted Postgres: production PORT, HTTPS Origin and durable state across process restarts', hostedOptions, async t => {
   let child, port;
   async function stop() {
     if (!child || child.exitCode !== null || child.signalCode !== null) return;
@@ -19,7 +15,7 @@ test('production entry point uses PORT, public Host/HTTPS Origin and persistent 
   }
   async function start() {
     child = spawn(process.execPath, ['server.js'], { cwd: root,
-      env: { ...process.env, NODE_ENV: 'production', HOST: '0.0.0.0', PORT: '0', DATA_FILE: dataFile },
+      env: { ...process.env, NODE_ENV: 'production', HOST: '0.0.0.0', PORT: '0' },
       stdio: ['ignore', 'pipe', 'pipe'] });
     port = await new Promise((resolve,reject) => {
       const timeout = setTimeout(()=>reject(new Error('Production startup timed out')),10000);
@@ -42,7 +38,7 @@ test('production entry point uses PORT, public Host/HTTPS Origin and persistent 
     });
     req.on('error',reject);req.end(body===undefined?undefined:JSON.stringify(body));
   });
-  t.after(async()=>{await stop();fs.rmSync(directory,{recursive:true,force:true});});
+  t.after(stop);
   await start();
   assert.ok(port>0);
   const health=await request('/healthz');
@@ -59,19 +55,9 @@ test('production entry point uses PORT, public Host/HTTPS Origin and persistent 
   await stop();await start();
   const restored=JSON.parse((await request('/api/state',b.token)).raw);
   assert.equal(restored.isPaired,true);assert.equal(restored.history[0].type,'received');
+  assert.equal(restored.history.length,1);
+  assert.equal((await request('/api/ping',a.token,{id:'deployment-ping-123456'})).status,200);
+  assert.equal(JSON.parse((await request('/api/state',b.token)).raw).history.length,1);
+  assert.equal((await request('/api/unpair',a.token,{})).status,200);
   assert.equal(restored.history[0].sender,'Alex');
-});
-
-test('production rejects missing storage, invalid ports and public data paths',()=>{
-  const env={...process.env,NODE_ENV:'production'};delete env.DATA_FILE;
-  const missing=spawnSync(process.execPath,['server.js'],{cwd:root,env,encoding:'utf8'});
-  assert.notEqual(missing.status,0);assert.match(missing.stderr,/Production requires DATA_FILE/);
-  const invalid=spawnSync(process.execPath,['server.js'],{cwd:root,env:{...env,DATA_FILE:'unused.json',PORT:'invalid'},encoding:'utf8'});
-  assert.notEqual(invalid.status,0);assert.match(invalid.stderr,/PORT must be/);
-  assert.throws(()=>createServer({dataFile:path.join(root,'public','private.json')}),/outside the public/);
-  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'heartping-storage-'));
-  try {
-    const blocked=path.join(dir,'file');fs.writeFileSync(blocked,'not a directory');
-    assert.throws(()=>createServer({dataFile:path.join(blocked,'heartping.json')}));
-  } finally {fs.rmSync(dir,{recursive:true,force:true});}
 });

@@ -3,22 +3,14 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createBackend } from './backend.js';
+import { createStore } from './supabase-store.js';
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC = path.join(ROOT, 'public');
 const MIME = { '.html': 'text/html; charset=utf-8', '.css': 'text/css', '.js': 'application/javascript',
   '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.png': 'image/png' };
-export function createServer({ dataFile = process.env.DATA_FILE || path.join(ROOT, 'data', 'heartping.json') } = {}) {
-  dataFile = path.resolve(dataFile);
-  const relativeData = path.relative(PUBLIC, dataFile);
-  if (relativeData === '' || (!relativeData.startsWith('..' + path.sep) && !path.isAbsolute(relativeData))) {
-    throw new Error('DATA_FILE must be outside the public directory.');
-  }
-  // Fail deployment early if the configured storage cannot be written.
-  fs.mkdirSync(path.dirname(dataFile), { recursive: true });
-  const probe = path.join(path.dirname(dataFile), `.heartping-write-check-${process.pid}`);
-  fs.writeFileSync(probe, '', { flag: 'wx', mode: 0o600 });
-  fs.unlinkSync(probe);
-  const api = createBackend(dataFile);
+export function createServer() {
+  const store = createStore();
+  const api = createBackend(store);
   return http.createServer(async (req, res) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Referrer-Policy', 'no-referrer');
@@ -30,8 +22,10 @@ export function createServer({ dataFile = process.env.DATA_FILE || path.join(ROO
     }
     catch { res.writeHead(400); return res.end('Bad request'); }
     if (pathname === '/healthz' && ['GET', 'HEAD'].includes(req.method)) {
-      res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
-      return res.end(req.method === 'HEAD' ? undefined : '{"status":"ok"}');
+      let healthy = false;
+      try { healthy = (await store('health')).status === 200; } catch { /* Fail closed without leaking database details. */ }
+      res.writeHead(healthy ? 200 : 503, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+      return res.end(req.method === 'HEAD' ? undefined : JSON.stringify({ status: healthy ? 'ok' : 'unavailable' }));
     }
     if (pathname.startsWith('/api/')) return api(req, res, pathname);
     if (!['GET', 'HEAD'].includes(req.method)) { res.writeHead(405); return res.end('Method not allowed'); }
@@ -53,9 +47,6 @@ export function createServer({ dataFile = process.env.DATA_FILE || path.join(ROO
   });
 }
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  if (process.env.NODE_ENV === 'production' && !process.env.DATA_FILE) {
-    throw new Error('Production requires DATA_FILE pointing to a persistent disk outside public/.');
-  }
   const port = Number(process.env.PORT || 3000);
   if (!Number.isInteger(port) || port < 0 || port > 65535) throw new Error('PORT must be a valid port number.');
   const server = createServer();

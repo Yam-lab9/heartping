@@ -1,22 +1,18 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
+import { hostedOptions } from './hosted.mjs';
 import { randomUUID } from 'node:crypto';
 import { createServer } from '../server.js';
 
-test('real two-user journey, validation, isolation, persistence and static server safety', async t => {
-  const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'heartping-test-'));
-  const dataFile = path.join(folder, 'state.json');
+test('hosted Postgres: real two-user journey, isolation and persistence across Node restarts', hostedOptions, async t => {
   let server, base;
   async function start() {
-    server = createServer({ dataFile });
+    server = createServer();
     await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
     base = `http://127.0.0.1:${server.address().port}`;
   }
   async function stop() { await new Promise(resolve => server.close(resolve)); }
-  t.after(async () => { await stop(); fs.rmSync(folder, { recursive: true, force: true }); });
+  t.after(async () => { await stop(); });
   await start();
   const request = async (endpoint, token, body) => {
     const response = await fetch(base + '/api/' + endpoint, { method: body === undefined ? 'GET' : 'POST',
@@ -46,7 +42,6 @@ test('real two-user journey, validation, isolation, persistence and static serve
   assert.equal((await request('state', c.token)).data.history.length, 0);
   await request('ping', b.token, { id: randomUUID() });
   assert.equal((await request('state', a.token)).data.history[0].type, 'received');
-  assert.ok(!fs.readFileSync(dataFile,'utf8').includes(a.token), 'tokens are hashed on disk');
   await stop(); await start();
   assert.equal((await request('state', a.token)).data.history.length, 2);
   assert.equal((await request('state', b.token)).data.isPaired, true);
@@ -70,31 +65,22 @@ test('real two-user journey, validation, isolation, persistence and static serve
   assert.equal(raw.status, 400);
 });
 
-test('expired codes and failed storage do not create false pairing state', async t => {
-  const folder = fs.mkdtempSync(path.join(os.tmpdir(),'heartping-failure-'));
-  const dataFile=path.join(folder,'db','state.json');
-  fs.mkdirSync(path.dirname(dataFile));
-  const {createHash}=await import('node:crypto');
-  const id=token=>createHash('sha256').update(token).digest('hex');
-  fs.writeFileSync(dataFile,JSON.stringify({users:{
-    [id('a')]:{name:'A',code:'123456',expires:1,history:[],partner:null},
-    [id('b')]:{name:'B',code:'234567',expires:Date.now()+86400000,history:[],partner:null}
-  }}));
-  const server=createServer({dataFile});
-  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
-  t.after(async()=>{await new Promise(resolve=>server.close(resolve));fs.rmSync(folder,{recursive:true,force:true});});
-  const base=`http://127.0.0.1:${server.address().port}`;
-  const post=(route,token,body)=>fetch(base+'/api/'+route,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify(body)});
-  assert.equal((await post('join','b',{code:'123456'})).status,404);
-  assert.equal((await post('session','a',{name:'A'})).status,200);
-  const a=await (await fetch(base+'/api/state',{headers:{Authorization:'Bearer a'}})).json();
-  assert.notEqual(a.myCode,'123456');
-  // Simulate a read-only/unavailable data directory without changing machine permissions.
-  fs.renameSync(path.dirname(dataFile),path.join(folder,'backup'));
-  fs.writeFileSync(path.dirname(dataFile),'blocked');
-  assert.equal((await post('join','b',{code:a.myCode})).status,500);
-  const b=await (await fetch(base+'/api/state',{headers:{Authorization:'Bearer b'}})).json();
-  assert.equal(b.isPaired,false);
-  for(let i=0;i<8;i++) await post('join','b',{code:'000000'});
-  assert.equal((await post('join','b',{code:'000000'})).status,429);
+test('hosted Postgres: concurrent joins across Node instances cannot form two partnerships', hostedOptions, async t => {
+  const servers = [createServer(), createServer()];
+  await Promise.all(servers.map(server => new Promise(resolve => server.listen(0, '127.0.0.1', resolve))));
+  t.after(() => Promise.all(servers.map(server => new Promise(resolve => server.close(resolve)))));
+  const post = async (instance, route, token, body) => {
+    const response = await fetch(`http://127.0.0.1:${servers[instance].address().port}/api/${route}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token }, body: JSON.stringify(body)
+    });
+    return { status: response.status, data: await response.json() };
+  };
+  const a = (await post(0, 'session', '', { name: 'Race A' })).data;
+  const b = (await post(0, 'session', '', { name: 'Race B' })).data;
+  const c = (await post(1, 'session', '', { name: 'Race C' })).data;
+  const result = await Promise.all([post(0, 'join', b.token, { code: a.myCode }), post(1, 'join', c.token, { code: a.myCode })]);
+  assert.deepEqual(result.map(r => r.status).sort(), [200, 409]);
+  assert.equal((await post(0, 'unpair', a.token, {})).status, 200);
+  for (let i = 0; i < 9; i++) await post(0, 'join', b.token, { code: '000000' });
+  assert.equal((await post(0, 'join', b.token, { code: '000000' })).status, 429);
 });

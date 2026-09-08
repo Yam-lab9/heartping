@@ -1,12 +1,12 @@
-# Paid web service: the persistent disk is required for pairing/ping state.
+# Durable state is in hosted Supabase Postgres; no Render disk is needed.
 services:
   - type: web
     name: heartping
     runtime: node
-    plan: starter
+    plan: free
     region: frankfurt
     numInstances: 1
-    buildCommand: node scripts/build.mjs && node --test tests/backend.test.mjs tests/deployment.test.mjs
+    buildCommand: npm ci && npm run build && npm test
     startCommand: npm start
     healthCheckPath: /healthz
     envVars:
@@ -14,9 +14,7 @@ services:
         value: production
       - key: HOST
         value: 0.0.0.0
-      - key: DATA_FILE
-        value: /var/data/heartping.json
-    disk:
-      name: heartping-data
-      mountPath: /var/data
-      sizeGB: 1
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false

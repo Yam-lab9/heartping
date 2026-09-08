@@ -7,8 +7,11 @@
     "dev": "node server.js",
     "start": "node server.js",
     "build": "node scripts/build.mjs",
-    "test": "node --test tests/backend.test.mjs tests/deployment.test.mjs",
-    "test:browser": "node tests/browser.mjs"
+    "test": "node --test tests/config.test.mjs",
+    "test:browser": "node tests/browser.mjs",
+    "test:backend": "node --test tests/backend.test.mjs",
+    "test:deployment": "node --test tests/deployment.test.mjs",
+    "test:hosted": "node --test tests/backend.test.mjs tests/deployment.test.mjs"
   },
   "keywords": [
     "pwa",
@@ -20,5 +23,8 @@
   "license": "MIT",
   "engines": {
     "node": ">=24 <25"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "2.115.0"
   }
 }

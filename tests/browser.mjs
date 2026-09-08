@@ -1,12 +1,14 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import path from 'node:path';
-import os from 'node:os';
+import { hosted } from './hosted.mjs';
 import { pathToFileURL } from 'node:url';
 import { createServer } from '../server.js';
+if (!hosted) {
+  console.log('SKIP: browser integration requires hosted Supabase credentials and the applied SQL migration.');
+  process.exit(0);
+}
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE ? pathToFileURL(process.env.PLAYWRIGHT_MODULE).href : 'playwright');
-const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'heartping-browser-'));
-const server = createServer({ dataFile: path.join(folder,'state.json') });
+const server = createServer();
 await new Promise(resolve => server.listen(0,'127.0.0.1',resolve));
 const base=`http://127.0.0.1:${server.address().port}`;
 let browser;
@@ -88,6 +90,5 @@ try {
 } finally {
   await browser?.close();
   await new Promise(resolve=>server.close(resolve));
-  fs.rmSync(folder,{recursive:true,force:true});
 }
 

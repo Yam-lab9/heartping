@@ -31,6 +31,12 @@ dist/
 key.properties
 google-services.json
 service-account*.json
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
+keys/
 
 # Provider tooling and private data exports
 .vercel/

@@ -3,7 +3,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 const root = path.resolve(import.meta.dirname, '..');
 process.chdir(root);
-for (const file of ['server.js', 'backend.js', 'public/app.js', 'public/firebase-service.js', 'public/sw.js']) {
+for (const file of ['server.js', 'backend.js', 'supabase-store.js', 'public/app.js', 'public/firebase-service.js', 'public/sw.js']) {
   execFileSync(process.execPath, ['--check', file], { stdio: 'inherit' });
 }
 const manifest = JSON.parse(fs.readFileSync('public/manifest.webmanifest', 'utf8'));
